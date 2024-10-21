@@ -21,6 +21,7 @@
 #include "menu_indicators.h"
 #include "field_player_avatar.h"
 #include "fieldmap.h"
+#include "event_data.h"
 #include "event_object_movement.h"
 #include "money.h"
 #include "quest_log.h"
@@ -64,10 +65,10 @@ struct ShopData
     /*0x10*/ u16 itemCount;
     /*0x12*/ u16 itemsShowed;
     /*0x14*/ u16 maxQuantity;
-    /*0x16*/ u16 martType:4;    // 0x1 if tm list
-             u16 fontId:5;
-             u16 itemSlot:2;
-             u16 unk16_11:5;
+    /*0x16*/ u16 martType : 4; // 0x1 if tm list
+    u16 fontId : 5;
+    u16 itemSlot : 2;
+    u16 unk16_11 : 5;
     /*0x18*/ u16 unk18;
 };
 
@@ -82,7 +83,7 @@ EWRAM_DATA struct ListMenuItem *sShopMenuListMenu = {0};
 static EWRAM_DATA u8 (*sShopMenuItemStrings)[ITEM_NAME_LENGTH + 2] = {0};
 EWRAM_DATA struct QuestLogEvent_Shop sHistory[2] = {0};
 
-//Function Declarations
+// Function Declarations
 static u8 CreateShopMenu(u8 martType);
 static u8 GetMartTypeFromItemList(u32 a0);
 static void SetShopItemsForSale(const u16 *items);
@@ -146,214 +147,202 @@ static void BuyMenuQuantityBoxThinBorder(u8 windowId, bool8 copyToVram);
 static void BuyMenuConfirmPurchase(u8 taskId, const struct YesNoFuncTable *yesNo);
 
 static const struct MenuAction sShopMenuActions_BuySellQuit[] =
-{
-    {gText_ShopBuy, {.void_u8 = Task_HandleShopMenuBuy}},
-    {gText_ShopSell, {.void_u8 = Task_HandleShopMenuSell}},
-    {gText_ShopQuit, {.void_u8 = Task_HandleShopMenuQuit}}
-};
+    {
+        {gText_ShopBuy, {.void_u8 = Task_HandleShopMenuBuy}},
+        {gText_ShopSell, {.void_u8 = Task_HandleShopMenuSell}},
+        {gText_ShopQuit, {.void_u8 = Task_HandleShopMenuQuit}}};
 
 static const struct YesNoFuncTable sShopMenuActions_BuyQuit =
-{
-    .yesFunc = BuyMenuTryMakePurchase, 
-    .noFunc = BuyMenuReturnToItemList,
+    {
+        .yesFunc = BuyMenuTryMakePurchase,
+        .noFunc = BuyMenuReturnToItemList,
 };
 
 static const struct WindowTemplate sShopMenuWindowTemplate =
-{
-    .bg = 0,
-    .tilemapLeft = 2,
-    .tilemapTop = 1,
-    .width = 12,
-    .height = 6,
-    .paletteNum = 15,
-    .baseBlock = 8
-};
-
-static const struct BgTemplate sShopBuyMenuBgTemplates[4] =
-{
-    {
-        .bg = 0,
-        .charBaseIndex = 2,
-        .mapBaseIndex = 31,
-        .screenSize = 0,
-        .paletteMode = 0,
-        .priority = 0,
-        .baseTile = 0
-    },
-    {
-        .bg = 1,
-        .charBaseIndex = 0,
-        .mapBaseIndex = 30,
-        .screenSize = 0,
-        .paletteMode = 0,
-        .priority = 1,
-        .baseTile = 0
-    },
-    {
-        .bg = 2,
-        .charBaseIndex = 0,
-        .mapBaseIndex = 29,
-        .screenSize = 0,
-        .paletteMode = 0,
-        .priority = 2,
-        .baseTile = 0
-    },
-    {
-        .bg = 3,
-        .charBaseIndex = 0,
-        .mapBaseIndex = 28,
-        .screenSize = 0,
-        .paletteMode = 0,
-        .priority = 3,
-        .baseTile = 0
-    }
-};
-
-static const struct WindowTemplate sShopBuyMenuWindowTemplatesNormal[] =
-{
-    {
-        .bg = 0,
-        .tilemapLeft = 1,
-        .tilemapTop = 1,
-        .width = 8,
-        .height = 3,
-        .paletteNum = 15,
-        .baseBlock = 0x27,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 1,
-        .tilemapTop = 11,
-        .width = 13,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 0x3F,
-    },
     {
         .bg = 0,
         .tilemapLeft = 2,
-        .tilemapTop = 15,
-        .width = 26,
-        .height = 4,
-        .paletteNum = 14,
-        .baseBlock = 0x59,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 17,
-        .tilemapTop = 9,
-        .width = 12,
-        .height = 4,
-        .paletteNum = 14,
-        .baseBlock = 0xC1,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 11,
         .tilemapTop = 1,
-        .width = 17,
-        .height = 12,
-        .paletteNum = 14,
-        .baseBlock = 0xF1,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 5,
-        .tilemapTop = 14,
-        .width = 25,
+        .width = 12,
         .height = 6,
         .paletteNum = 15,
-        .baseBlock = 0x1BD,
-    },
-    DUMMY_WIN_TEMPLATE,
+        .baseBlock = 8};
+
+static const struct BgTemplate sShopBuyMenuBgTemplates[4] =
+    {
+        {.bg = 0,
+         .charBaseIndex = 2,
+         .mapBaseIndex = 31,
+         .screenSize = 0,
+         .paletteMode = 0,
+         .priority = 0,
+         .baseTile = 0},
+        {.bg = 1,
+         .charBaseIndex = 0,
+         .mapBaseIndex = 30,
+         .screenSize = 0,
+         .paletteMode = 0,
+         .priority = 1,
+         .baseTile = 0},
+        {.bg = 2,
+         .charBaseIndex = 0,
+         .mapBaseIndex = 29,
+         .screenSize = 0,
+         .paletteMode = 0,
+         .priority = 2,
+         .baseTile = 0},
+        {.bg = 3,
+         .charBaseIndex = 0,
+         .mapBaseIndex = 28,
+         .screenSize = 0,
+         .paletteMode = 0,
+         .priority = 3,
+         .baseTile = 0}};
+
+static const struct WindowTemplate sShopBuyMenuWindowTemplatesNormal[] =
+    {
+        {
+            .bg = 0,
+            .tilemapLeft = 1,
+            .tilemapTop = 1,
+            .width = 8,
+            .height = 3,
+            .paletteNum = 15,
+            .baseBlock = 0x27,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 1,
+            .tilemapTop = 11,
+            .width = 13,
+            .height = 2,
+            .paletteNum = 15,
+            .baseBlock = 0x3F,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 2,
+            .tilemapTop = 15,
+            .width = 26,
+            .height = 4,
+            .paletteNum = 14,
+            .baseBlock = 0x59,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 17,
+            .tilemapTop = 9,
+            .width = 12,
+            .height = 4,
+            .paletteNum = 14,
+            .baseBlock = 0xC1,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 11,
+            .tilemapTop = 1,
+            .width = 17,
+            .height = 12,
+            .paletteNum = 14,
+            .baseBlock = 0xF1,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 5,
+            .tilemapTop = 14,
+            .width = 25,
+            .height = 6,
+            .paletteNum = 15,
+            .baseBlock = 0x1BD,
+        },
+        DUMMY_WIN_TEMPLATE,
 };
 
 // firered uses different layout when selling TMs
 static const struct WindowTemplate sShopBuyMenuWindowTemplatesTM[] =
-{
     {
-        .bg = 0,
-        .tilemapLeft = 1,
-        .tilemapTop = 1,
-        .width = 8,
-        .height = 3,
-        .paletteNum = 15,
-        .baseBlock = 0x27,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 1,
-        .tilemapTop = 11,
-        .width = 13,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 0x3F,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 2,
-        .tilemapTop = 15,
-        .width = 26,
-        .height = 4,
-        .paletteNum = 14,
-        .baseBlock = 0x59,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 17,
-        .tilemapTop = 9,
-        .width = 12,
-        .height = 4,
-        .paletteNum = 14,
-        .baseBlock = 0xC1,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 11,
-        .tilemapTop = 1,
-        .width = 17,
-        .height = 10,
-        .paletteNum = 14,
-        .baseBlock = 0xF1,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 12,
-        .tilemapTop = 12,
-        .width = 18,
-        .height = 8,
-        .paletteNum = 14,
-        .baseBlock = 0x19B,
-    },
-    {
-        .bg = 0,
-        .tilemapLeft = 1,
-        .tilemapTop = 14,
-        .width = 10,
-        .height = 4,
-        .paletteNum = 14,
-        .baseBlock = 0x22B,
-    },
-    DUMMY_WIN_TEMPLATE,
+        {
+            .bg = 0,
+            .tilemapLeft = 1,
+            .tilemapTop = 1,
+            .width = 8,
+            .height = 3,
+            .paletteNum = 15,
+            .baseBlock = 0x27,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 1,
+            .tilemapTop = 11,
+            .width = 13,
+            .height = 2,
+            .paletteNum = 15,
+            .baseBlock = 0x3F,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 2,
+            .tilemapTop = 15,
+            .width = 26,
+            .height = 4,
+            .paletteNum = 14,
+            .baseBlock = 0x59,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 17,
+            .tilemapTop = 9,
+            .width = 12,
+            .height = 4,
+            .paletteNum = 14,
+            .baseBlock = 0xC1,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 11,
+            .tilemapTop = 1,
+            .width = 17,
+            .height = 10,
+            .paletteNum = 14,
+            .baseBlock = 0xF1,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 12,
+            .tilemapTop = 12,
+            .width = 18,
+            .height = 8,
+            .paletteNum = 14,
+            .baseBlock = 0x19B,
+        },
+        {
+            .bg = 0,
+            .tilemapLeft = 1,
+            .tilemapTop = 14,
+            .width = 10,
+            .height = 4,
+            .paletteNum = 14,
+            .baseBlock = 0x22B,
+        },
+        DUMMY_WIN_TEMPLATE,
 };
 
 static const struct WindowTemplate sShopBuyMenuYesNoWindowTemplate =
-{
-    .bg = 0,
-    .tilemapLeft = 21,
-    .tilemapTop = 9,
-    .width = 6,
-    .height = 4,
-    .paletteNum = 14,
-    .baseBlock = 0xC1,
+    {
+        .bg = 0,
+        .tilemapLeft = 21,
+        .tilemapTop = 9,
+        .width = 6,
+        .height = 4,
+        .paletteNum = 14,
+        .baseBlock = 0xC1,
 };
 
 static const u8 sShopBuyMenuTextColors[][3] =
-{
-    {0, 1, 2},
-    {0, 2, 3},
-    {0, 3, 2}
-};
+    {
+        {0, 1, 2},
+        {0, 2, 3},
+        {0, 3, 2}};
 
 // Functions
 static u8 CreateShopMenu(u8 martType)
@@ -381,16 +370,35 @@ static u8 GetMartTypeFromItemList(u32 martType)
     return MART_TYPE_REGULAR;
 }
 
+static u8 GetNumberOfBadges(void)
+{
+    u16 badgeFlag;
+    u8 count = 0;
+
+    for (badgeFlag = FLAG_BADGE01_GET; badgeFlag < FLAG_BADGE01_GET + NUM_BADGES; badgeFlag++)
+    {
+        if (FlagGet(badgeFlag))
+            count++;
+    }
+
+    return count;
+}
+
 static void SetShopItemsForSale(const u16 *items)
 {
-    sShopData.itemList = items;
-    sShopData.itemCount = 0;
-    if (sShopData.itemList[0] == 0)
-        return;
+    u16 i = 0;
+    u8 badgeCount = GetNumberOfBadges();
 
-    while (sShopData.itemList[sShopData.itemCount])
+    if (items == NULL)
+        sMartInfo.itemList = sShopInventories[badgeCount];
+    else
+        sMartInfo.itemList = items;
+
+    sMartInfo.itemCount = 0;
+    while (sMartInfo.itemList[i])
     {
-        ++sShopData.itemCount;
+        sMartInfo.itemCount++;
+        i++;
     }
 }
 
@@ -706,8 +714,7 @@ bool8 BuyMenuBuildListMenuTemplate(void)
     u16 i, v;
 
     sShopMenuListMenu = Alloc((sShopData.itemCount + 1) * sizeof(*sShopMenuListMenu));
-    if (sShopMenuListMenu == NULL
-     || (sShopMenuItemStrings = Alloc((sShopData.itemCount + 1) * sizeof(*sShopMenuItemStrings))) == NULL)
+    if (sShopMenuListMenu == NULL || (sShopMenuItemStrings = Alloc((sShopData.itemCount + 1) * sizeof(*sShopMenuItemStrings))) == NULL)
     {
         BuyMenuFreeMemory();
         SetShopExitCallback();
@@ -784,7 +791,7 @@ static void BuyMenuPrintItemDescriptionAndShowItemIcon(s32 item, bool8 onInit, s
         sShopData.itemSlot ^= 1;
         BuyMenuPrint(5, FONT_NORMAL, description, 0, 3, 2, 1, 0, 0);
     }
-    else //TM Mart
+    else // TM Mart
     {
         FillWindowPixelBuffer(6, PIXEL_FILL(0));
         LoadTmHmNameInMart(item);
@@ -879,18 +886,17 @@ static void SetShopExitCallback(void)
     SetMainCallback2(CB2_ReturnToField);
 }
 
-
 static void BuyMenuAddScrollIndicatorArrows(void)
 {
     if (sShopData.martType != MART_TYPE_TMHM)
     {
         sShopData.unk16_11 = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 160, 8, 104,
-            (sShopData.itemCount - sShopData.itemsShowed) + 1, 110, 110, &sShopData.scrollOffset);
+                                                                      (sShopData.itemCount - sShopData.itemsShowed) + 1, 110, 110, &sShopData.scrollOffset);
     }
     else
     {
         sShopData.unk16_11 = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 160, 8, 88,
-            (sShopData.itemCount - sShopData.itemsShowed) + 1, 110, 110, &sShopData.scrollOffset);
+                                                                      (sShopData.itemCount - sShopData.itemsShowed) + 1, 110, 110, &sShopData.scrollOffset);
     }
 }
 
@@ -960,8 +966,8 @@ static void BuyMenuDrawMapMetatile(s16 x, s16 y, const u16 *src, u8 metatileLaye
 
 static void BuyMenuDrawMapMetatileLayer(u16 *dest, s16 offset1, s16 offset2, const u16 *src)
 {
-    dest[offset1 + offset2] = src[0]; // top left
-    dest[offset1 + offset2 + 1] = src[1]; // top right
+    dest[offset1 + offset2] = src[0];      // top left
+    dest[offset1 + offset2 + 1] = src[1];  // top right
     dest[offset1 + offset2 + 32] = src[2]; // bottom left
     dest[offset1 + offset2 + 33] = src[3]; // bottom right
 }
@@ -991,19 +997,19 @@ static void BuyMenuCollectObjectEventData(void)
 
                 switch (gObjectEvents[eventObjId].facingDirection)
                 {
-                    case DIR_SOUTH:
-                        sViewportObjectEvents[num][ANIM_NUM] = 0;
-                        break;
-                    case DIR_NORTH:
-                        sViewportObjectEvents[num][ANIM_NUM] = 1;
-                        break;
-                    case DIR_WEST:
-                        sViewportObjectEvents[num][ANIM_NUM] = 2;
-                        break;
-                    case DIR_EAST:
-                    default:
-                        sViewportObjectEvents[num][ANIM_NUM] = 3;
-                        break;
+                case DIR_SOUTH:
+                    sViewportObjectEvents[num][ANIM_NUM] = 0;
+                    break;
+                case DIR_NORTH:
+                    sViewportObjectEvents[num][ANIM_NUM] = 1;
+                    break;
+                case DIR_WEST:
+                    sViewportObjectEvents[num][ANIM_NUM] = 2;
+                    break;
+                case DIR_EAST:
+                default:
+                    sViewportObjectEvents[num][ANIM_NUM] = 3;
+                    break;
                 }
                 num++;
             }
@@ -1196,9 +1202,7 @@ static void Task_ReturnToItemListAfterItemPurchase(u8 taskId)
     if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))
     {
         u16 premierBallsToAdd = tItemCount / 10;
-        if (premierBallsToAdd >= 1
-         && ((I_PREMIER_BALL_BONUS <= GEN_7 && tItemId == ITEM_POKE_BALL)
-          || (I_PREMIER_BALL_BONUS >= GEN_8 && (ItemId_GetPocket(tItemId) == POCKET_POKE_BALLS))))
+        if (premierBallsToAdd >= 1 && ((I_PREMIER_BALL_BONUS <= GEN_7 && tItemId == ITEM_POKE_BALL) || (I_PREMIER_BALL_BONUS >= GEN_8 && (ItemId_GetPocket(tItemId) == POCKET_POKE_BALLS))))
         {
             u32 spaceAvailable = GetFreeSpaceForItemInBag(ITEM_PREMIER_BALL);
             if (spaceAvailable < premierBallsToAdd)
@@ -1356,3 +1360,163 @@ void CreateDecorationShop2Menu(const u16 *itemsForSale)
     SetShopMenuCallback(ScriptContext_Enable);
 }
 
+static const u16 sShopInventory_ZeroBadges[] = {
+    ITEM_POKE_BALL,
+    ITEM_POTION,
+    ITEM_ANTIDOTE,
+    ITEM_BURN_HEAL,
+    ITEM_ICE_HEAL,
+    ITEM_AWAKENING,
+    ITEM_PARALYZE_HEAL,
+    ITEM_REVIVE,
+    ITEM_NONE};
+
+static const u16 sShopInventory_OneBadge[] = {
+    ITEM_POKE_BALL,
+    ITEM_GREAT_BALL,
+    ITEM_POTION,
+    ITEM_SUPER_POTION,
+    ITEM_ANTIDOTE,
+    ITEM_BURN_HEAL,
+    ITEM_ICE_HEAL,
+    ITEM_AWAKENING,
+    ITEM_PARALYZE_HEAL,
+    ITEM_REVIVE,
+    ITEM_NONE};
+
+static const u16 sShopInventory_TwoBadges[] = {
+    ITEM_POKE_BALL,
+    ITEM_GREAT_BALL,
+    ITEM_POTION,
+    ITEM_SUPER_POTION,
+    ITEM_ANTIDOTE,
+    ITEM_BURN_HEAL,
+    ITEM_ICE_HEAL,
+    ITEM_AWAKENING,
+    ITEM_PARALYZE_HEAL,
+    ITEM_REVIVE,
+    ITEM_POKE_DOLL,
+    ITEM_NONE};
+
+static const u16 sShopInventory_ThreeBadges[] = {
+    ITEM_POKE_BALL,
+    ITEM_GREAT_BALL,
+    ITEM_POTION,
+    ITEM_SUPER_POTION,
+    ITEM_ANTIDOTE,
+    ITEM_BURN_HEAL,
+    ITEM_ICE_HEAL,
+    ITEM_AWAKENING,
+    ITEM_PARALYZE_HEAL,
+    ITEM_REVIVE,
+    ITEM_REPEL,
+    ITEM_POKE_DOLL,
+    ITEM_NONE};
+
+static const u16 sShopInventory_FourBadges[] = {
+    ITEM_POKE_BALL,
+    ITEM_GREAT_BALL,
+    ITEM_POTION,
+    ITEM_SUPER_POTION,
+    ITEM_HYPER_POTION,
+    ITEM_ANTIDOTE,
+    ITEM_BURN_HEAL,
+    ITEM_ICE_HEAL,
+    ITEM_AWAKENING,
+    ITEM_PARALYZE_HEAL,
+    ITEM_REVIVE,
+    ITEM_REPEL,
+    ITEM_POKE_DOLL,
+    ITEM_NONE};
+
+static const u16 sShopInventory_FiveBadges[] = {
+    ITEM_POKE_BALL,
+    ITEM_GREAT_BALL,
+    ITEM_ULTRA_BALL,
+    ITEM_POTION,
+    ITEM_SUPER_POTION,
+    ITEM_HYPER_POTION,
+    ITEM_ANTIDOTE,
+    ITEM_BURN_HEAL,
+    ITEM_ICE_HEAL,
+    ITEM_AWAKENING,
+    ITEM_PARALYZE_HEAL,
+    ITEM_REVIVE,
+    ITEM_REPEL,
+    ITEM_SUPER_REPEL,
+    ITEM_POKE_DOLL,
+    ITEM_NONE};
+
+static const u16 sShopInventory_SixBadges[] = {
+    ITEM_POKE_BALL,
+    ITEM_GREAT_BALL,
+    ITEM_ULTRA_BALL,
+    ITEM_POTION,
+    ITEM_SUPER_POTION,
+    ITEM_HYPER_POTION,
+    ITEM_ANTIDOTE,
+    ITEM_BURN_HEAL,
+    ITEM_ICE_HEAL,
+    ITEM_AWAKENING,
+    ITEM_PARALYZE_HEAL,
+    ITEM_FULL_HEAL,
+    ITEM_REVIVE,
+    ITEM_REPEL,
+    ITEM_SUPER_REPEL,
+    ITEM_POKE_DOLL,
+    ITEM_NONE};
+
+static const u16 sShopInventory_SevenBadges[] = {
+    ITEM_POKE_BALL,
+    ITEM_GREAT_BALL,
+    ITEM_ULTRA_BALL,
+    ITEM_POTION,
+    ITEM_SUPER_POTION,
+    ITEM_HYPER_POTION,
+    ITEM_MAX_POTION,
+    ITEM_ANTIDOTE,
+    ITEM_BURN_HEAL,
+    ITEM_ICE_HEAL,
+    ITEM_AWAKENING,
+    ITEM_PARALYZE_HEAL,
+    ITEM_FULL_HEAL,
+    ITEM_REVIVE,
+    ITEM_REPEL,
+    ITEM_SUPER_REPEL,
+    ITEM_MAX_REPEL,
+    ITEM_POKE_DOLL,
+    ITEM_NONE};
+
+static const u16 sShopInventory_EightBadges[] = {
+    ITEM_POKE_BALL,
+    ITEM_GREAT_BALL,
+    ITEM_ULTRA_BALL,
+    ITEM_POTION,
+    ITEM_SUPER_POTION,
+    ITEM_HYPER_POTION,
+    ITEM_MAX_POTION,
+    ITEM_FULL_RESTORE,
+    ITEM_ANTIDOTE,
+    ITEM_BURN_HEAL,
+    ITEM_ICE_HEAL,
+    ITEM_AWAKENING,
+    ITEM_PARALYZE_HEAL,
+    ITEM_FULL_HEAL,
+    ITEM_REVIVE,
+    ITEM_REPEL,
+    ITEM_SUPER_REPEL,
+    ITEM_MAX_REPEL,
+    ITEM_POKE_DOLL,
+    ITEM_NONE};
+
+static const u16 *const sShopInventories[] =
+    {
+        sShopInventory_ZeroBadges,
+        sShopInventory_OneBadge,
+        sShopInventory_TwoBadges,
+        sShopInventory_ThreeBadges,
+        sShopInventory_FourBadges,
+        sShopInventory_FiveBadges,
+        sShopInventory_SixBadges,
+        sShopInventory_SevenBadges,
+        sShopInventory_EightBadges};
