@@ -454,9 +454,8 @@ PalletTown_EventScript_SignLadyStartShowSign::
 `
 script PalletTown_EventScript_Repel {
 	lockall
-	additem (ITEM_REPEL, 3)
-	compare (VAR_RESULT, 0)
-	goto_if_eq (Script_BagIsFull)
+	giveitem(ITEM_REPEL, 3)
+	waitmessage
 	releaseall
 	end
 }
