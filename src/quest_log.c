@@ -29,9 +29,10 @@
 #include "constants/field_weather.h"
 #include "constants/event_object_movement.h"
 
-enum {
-    WIN_TOP_BAR,      // Contains the "Previously on..." text
-    WIN_BOTTOM_BAR,   // Empty, only briefly visible at the end or when the description window isn't covering it.
+enum
+{
+    WIN_TOP_BAR,    // Contains the "Previously on..." text
+    WIN_BOTTOM_BAR, // Empty, only briefly visible at the end or when the description window isn't covering it.
     WIN_DESCRIPTION,
     WIN_COUNT
 };
@@ -43,7 +44,8 @@ enum {
 // sQuestLogActionRecordBuffer should be large enough to fill a scene's script with the maximum number of actions
 #define SCRIPT_BUFFER_SIZE (sizeof(gSaveBlock1Ptr->questLog[0].script) / sizeof(struct QuestLogAction))
 
-enum {
+enum
+{
     END_MODE_NONE,
     END_MODE_FINISH,
     END_MODE_SCENE,
@@ -51,9 +53,9 @@ enum {
 
 struct PlaybackControl
 {
-    u8 state:4;
-    u8 playingEvent:2;
-    u8 endMode:2;
+    u8 state : 4;
+    u8 playingEvent : 2;
+    u8 endMode : 2;
     u8 cursor;
     u8 timer;
     u8 overlapTimer;
@@ -61,17 +63,17 @@ struct PlaybackControl
 
 struct FlagOrVarRecord
 {
-    u16 idx:15;
-    u16 isFlag:1;
+    u16 idx : 15;
+    u16 isFlag : 1;
     u16 value;
 };
 
 u8 gQuestLogPlaybackState;
 u16 sMaxActionsInScene;
 struct FieldInput gQuestLogFieldInput;
-struct QuestLogAction * sCurSceneActions;
+struct QuestLogAction *sCurSceneActions;
 
-static struct FlagOrVarRecord * sFlagOrVarRecords;
+static struct FlagOrVarRecord *sFlagOrVarRecords;
 static u16 sNumFlagsOrVars;
 
 static EWRAM_DATA u8 sCurrentSceneNum = 0;
@@ -82,7 +84,7 @@ static EWRAM_DATA u8 sWindowIds[WIN_COUNT] = {0};
 EWRAM_DATA u16 *gQuestLogDefeatedWildMonRecord = NULL;
 EWRAM_DATA u16 *gQuestLogRecordingPointer = NULL;
 static EWRAM_DATA u16 *sEventData[32] = {NULL};
-static EWRAM_DATA void (* sQuestLogCB)(void) = NULL;
+static EWRAM_DATA void (*sQuestLogCB)(void) = NULL;
 static EWRAM_DATA u16 *sPalettesBackup = NULL;
 static EWRAM_DATA struct PlaybackControl sPlaybackControl = {0};
 static EWRAM_DATA struct QuestLogAction sQuestLogActionRecordBuffer[SCRIPT_BUFFER_SIZE] = {0};
@@ -101,7 +103,6 @@ static void BackUpTrainerRematches(void);
 static void BackUpMapLayout(void);
 static void SetGameStateAtScene(u8);
 static u8 TryRecordActionSequence(struct QuestLogAction *);
-static void Task_BeginQuestLogPlayback(u8);
 static void QL_LoadObjectsAndTemplates(u8);
 static void QLPlayback_InitOverworldState(void);
 static void SetPokemonCounts(void);
@@ -136,32 +137,14 @@ static bool8 RecordHeadAtEndOfEntry(void);
 static const struct WindowTemplate sWindowTemplates[WIN_COUNT] = {
     [WIN_TOP_BAR] = {
         .bg = 0,
-        .tilemapLeft = 0, 
+        .tilemapLeft = 0,
         .tilemapTop = 0,
         .width = 30,
         .height = 2,
         .paletteNum = 15,
-        .baseBlock = 0x0e9
-    },
-    [WIN_BOTTOM_BAR] = {
-        .bg = 0,
-        .tilemapLeft = 0,
-        .tilemapTop = 18,
-        .width = 30,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 0x0ad
-    },
-    [WIN_DESCRIPTION] = {
-        .bg = 0,
-        .tilemapLeft = 0,
-        .tilemapTop = 14,
-        .width = DESC_WIN_WIDTH,
-        .height = DESC_WIN_HEIGHT,
-        .paletteNum = 15,
-        .baseBlock = 0x14c
-    }
-};
+        .baseBlock = 0x0e9},
+    [WIN_BOTTOM_BAR] = {.bg = 0, .tilemapLeft = 0, .tilemapTop = 18, .width = 30, .height = 2, .paletteNum = 15, .baseBlock = 0x0ad},
+    [WIN_DESCRIPTION] = {.bg = 0, .tilemapLeft = 0, .tilemapTop = 14, .width = DESC_WIN_WIDTH, .height = DESC_WIN_HEIGHT, .paletteNum = 15, .baseBlock = 0x14c}};
 
 static const u8 sTextColors[3] = {TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_WHITE, TEXT_DYNAMIC_COLOR_3};
 
@@ -222,7 +205,7 @@ void RunQuestLogCB(void)
         sQuestLogCB();
 }
 
-bool8 QL_IsRoomToSaveEvent(const void * cursor, size_t size)
+bool8 QL_IsRoomToSaveEvent(const void *cursor, size_t size)
 {
     const void *start = gSaveBlock1Ptr->questLog[sCurrentSceneNum].script;
     const void *end = gSaveBlock1Ptr->questLog[sCurrentSceneNum].end;
@@ -233,7 +216,7 @@ bool8 QL_IsRoomToSaveEvent(const void * cursor, size_t size)
 }
 
 // Identical to QL_IsRoomToSaveEvent
-bool8 QL_IsRoomToSaveAction(const void * cursor, size_t size)
+bool8 QL_IsRoomToSaveAction(const void *cursor, size_t size)
 {
     const void *start = gSaveBlock1Ptr->questLog[sCurrentSceneNum].script;
     const void *end = gSaveBlock1Ptr->questLog[sCurrentSceneNum].end;
@@ -270,10 +253,7 @@ static void QLogCB_Playback(void)
 
     if (sPlaybackControl.endMode == END_MODE_NONE)
     {
-        if (gQuestLogPlaybackState != QL_PLAYBACK_STATE_STOPPED 
-         || sPlaybackControl.state == 1 
-         || (sPlaybackControl.cursor < ARRAY_COUNT(sEventData) 
-          && sEventData[sPlaybackControl.cursor] != NULL))
+        if (gQuestLogPlaybackState != QL_PLAYBACK_STATE_STOPPED || sPlaybackControl.state == 1 || (sPlaybackControl.cursor < ARRAY_COUNT(sEventData) && sEventData[sPlaybackControl.cursor] != NULL))
             QuestLog_PlayCurrentEvent();
         else
         {
@@ -320,7 +300,7 @@ void QL_StartRecordingAction(u16 eventId)
 
 static void SetPlayerInitialCoordsAtScene(u8 sceneNum)
 {
-    struct QuestLogScene * questLog = &gSaveBlock1Ptr->questLog[sceneNum];
+    struct QuestLogScene *questLog = &gSaveBlock1Ptr->questLog[sceneNum];
     questLog->mapGroup = gSaveBlock1Ptr->location.mapGroup;
     questLog->mapNum = gSaveBlock1Ptr->location.mapNum;
     questLog->warpId = gSaveBlock1Ptr->location.warpId;
@@ -330,7 +310,7 @@ static void SetPlayerInitialCoordsAtScene(u8 sceneNum)
 
 static void SetNPCInitialCoordsAtScene(u8 sceneNum)
 {
-    struct QuestLogScene * questLog = &gSaveBlock1Ptr->questLog[sceneNum];
+    struct QuestLogScene *questLog = &gSaveBlock1Ptr->questLog[sceneNum];
     u16 i;
 
     QL_RecordObjects(questLog);
@@ -364,7 +344,7 @@ static void SetNPCInitialCoordsAtScene(u8 sceneNum)
 
 static void SetGameStateAtScene(u8 sceneNum)
 {
-    struct QuestLogScene * questLog = &gSaveBlock1Ptr->questLog[sceneNum];
+    struct QuestLogScene *questLog = &gSaveBlock1Ptr->questLog[sceneNum];
 
     CpuCopy16(gSaveBlock1Ptr->flags, questLog->flags, sizeof(gSaveBlock1Ptr->flags));
     CpuCopy16(gSaveBlock1Ptr->vars, questLog->vars, sizeof(gSaveBlock1Ptr->vars));
@@ -407,7 +387,7 @@ static void RecordSceneEnd(void)
         sCurrentSceneNum = 0;
 }
 
-static bool8 TryRecordActionSequence(struct QuestLogAction * actions)
+static bool8 TryRecordActionSequence(struct QuestLogAction *actions)
 {
     u16 i;
 
@@ -439,42 +419,6 @@ static bool8 TryRecordActionSequence(struct QuestLogAction * actions)
     }
     sRecordSequenceStartIdx = gQuestLogCurActionIdx;
     return TRUE;
-}
-
-void TryStartQuestLogPlayback(u8 taskId)
-{
-    u8 i;
-
-    QL_EnableRecordingSteps();
-    sNumScenes = 0;
-    for (i = 0; i < QUEST_LOG_SCENE_COUNT; i++)
-    {
-        if (gSaveBlock1Ptr->questLog[i].startType != 0)
-            sNumScenes++;
-    }
-
-    if (sNumScenes != 0)
-    {
-        gHelpSystemEnabled = FALSE;
-        Task_BeginQuestLogPlayback(taskId);
-        DestroyTask(taskId);
-    }
-    else
-    {
-        SetMainCallback2(CB2_ContinueSavedGame);
-        DestroyTask(taskId);
-    }
-}
-
-static void Task_BeginQuestLogPlayback(u8 taskId)
-{
-    gSaveBlock1Ptr->location.mapGroup = MAP_GROUP(ROUTE1);
-    gSaveBlock1Ptr->location.mapNum =  MAP_NUM(ROUTE1);
-    gSaveBlock1Ptr->location.warpId = WARP_ID_NONE;
-    sCurrentSceneNum = 0;
-    gDisableMapMusicChangeOnMapLoad = 1;
-    DisableWildEncounters(TRUE);
-    QLPlayback_InitOverworldState();
 }
 
 void QL_InitSceneObjectsAndActions(void)
@@ -542,7 +486,7 @@ static void QL_LoadObjectsAndTemplates(u8 sceneNum)
 {
     struct QuestLogScene *questLog = &gSaveBlock1Ptr->questLog[sceneNum];
     u16 i;
-    
+
     for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
     {
         if (questLog->objectEventTemplates[i].negx)
@@ -605,7 +549,7 @@ static void QLPlayback_InitOverworldState(void)
 
 void QL_CopySaveState(void)
 {
-    struct QuestLogScene * questLog = &gSaveBlock1Ptr->questLog[sCurrentSceneNum];
+    struct QuestLogScene *questLog = &gSaveBlock1Ptr->questLog[sCurrentSceneNum];
 
     CpuCopy16(questLog->flags, gSaveBlock1Ptr->flags, sizeof(gSaveBlock1Ptr->flags));
     CpuCopy16(questLog->vars, gSaveBlock1Ptr->vars, sizeof(gSaveBlock1Ptr->vars));
@@ -613,11 +557,12 @@ void QL_CopySaveState(void)
 }
 
 // The number of bits allocated to store the number of pokemon in the PC
-#define NUM_PC_COUNT_BITS  12
+#define NUM_PC_COUNT_BITS 12
 
 void QL_ResetPartyAndPC(void)
 {
-    struct {
+    struct
+    {
         struct Pokemon mon;
         u16 partyCount;
         u16 boxMonCount;
@@ -670,7 +615,7 @@ void QL_ResetPartyAndPC(void)
         {
             for (j = 0; j < IN_BOX_COUNT; j++)
             {
-                struct BoxPokemon * boxMon = GetBoxedMonPtr(i, j);
+                struct BoxPokemon *boxMon = GetBoxedMonPtr(i, j);
                 if (!GetBoxMonData(boxMon, MON_DATA_SANITY_HAS_SPECIES))
                 {
                     // Replace the additional slots with placeholder Pokémon.
@@ -757,7 +702,7 @@ void QL_RestoreMapLayoutId(void)
     }
 }
 
-static void ReadQuestLogScriptFromSav1(u8 sceneNum, struct QuestLogAction * actions)
+static void ReadQuestLogScriptFromSav1(u8 sceneNum, struct QuestLogAction *actions)
 {
     u16 i;
     u16 *script;
@@ -893,9 +838,9 @@ static void Task_AvoidDisplay(u8 taskId)
         if (!gPaletteFade.active)
         {
             gQuestLogPlaybackState = QL_PLAYBACK_STATE_STOPPED;
-            
+
             // Call the provided function (if any). In practice this is always QL_DestroyAbortedDisplay
-            routine = (void (*)(void)) GetWordTaskArg(taskId, DATA_IDX_CALLBACK);
+            routine = (void (*)(void))GetWordTaskArg(taskId, DATA_IDX_CALLBACK);
             if (routine != NULL)
                 routine();
 
@@ -1246,10 +1191,10 @@ static bool8 RestoreScreenAfterPlayback(u8 taskId)
 
     CopyPaletteInvertedTint(&gPlttBufferUnfaded[BG_PLTT_ID(0) + 1], &gPlttBufferFaded[BG_PLTT_ID(0) + 1], 0xDF, 15 - tTimer);
     CopyPaletteInvertedTint(&gPlttBufferUnfaded[OBJ_PLTT_ID(0)], &gPlttBufferFaded[OBJ_PLTT_ID(0)], 0x100, 15 - tTimer);
-                            
+
     gTimeUpdateCounter = 0;
     UpdateTimeOfDay();
-    
+
     if (MapHasNaturalLight(gMapHeader.mapType))
     {
         UpdateAltBgPalettes(PALETTES_BG);
@@ -1313,7 +1258,7 @@ void QuestLog_CutRecording(void)
 
 static void SortQuestLogInSav1(void)
 {
-    struct QuestLogScene * buffer = AllocZeroed(sizeof(gSaveBlock1Ptr->questLog));
+    struct QuestLogScene *buffer = AllocZeroed(sizeof(gSaveBlock1Ptr->questLog));
     u8 i;
     u8 sceneNum = sCurrentSceneNum;
     u8 count = 0;
@@ -1457,7 +1402,7 @@ void QuestLogRecordPlayerAvatarGfxTransitionWithDuration(u8 gfxState, u8 duratio
     }
 }
 
-void QL_RecordFieldInput(struct FieldInput * fieldInput)
+void QL_RecordFieldInput(struct FieldInput *fieldInput)
 {
     if (gQuestLogCurActionIdx < sMaxActionsInScene)
     {
@@ -1558,8 +1503,7 @@ static void ResetActions(u8 kind, struct QuestLogAction *actions, u16 size)
         {
             sCurSceneActions[i] = (struct QuestLogAction){
                 .duration = 0xFFFF,
-                .type = QL_ACTION_SCENE_END
-            };
+                .type = QL_ACTION_SCENE_END};
         }
         gQuestLogCurActionIdx = 0;
         sNextActionDelay = 0;
@@ -1627,10 +1571,7 @@ void QL_TryRunActions(void)
                         break;
                     case QL_ACTION_INPUT:
                         // Player input
-                        *(u32 *)&gQuestLogFieldInput = ((sCurSceneActions[gQuestLogCurActionIdx].data.fieldInput[3] << 24)
-                                                      | (sCurSceneActions[gQuestLogCurActionIdx].data.fieldInput[2] << 16)
-                                                      | (sCurSceneActions[gQuestLogCurActionIdx].data.fieldInput[1] << 8)
-                                                      | (sCurSceneActions[gQuestLogCurActionIdx].data.fieldInput[0] << 0));
+                        *(u32 *)&gQuestLogFieldInput = ((sCurSceneActions[gQuestLogCurActionIdx].data.fieldInput[3] << 24) | (sCurSceneActions[gQuestLogCurActionIdx].data.fieldInput[2] << 16) | (sCurSceneActions[gQuestLogCurActionIdx].data.fieldInput[1] << 8) | (sCurSceneActions[gQuestLogCurActionIdx].data.fieldInput[0] << 0));
                         break;
                     case QL_ACTION_EMPTY:
                         // End
@@ -1713,8 +1654,7 @@ static bool8 RecordHeadAtEndOfEntry(void)
 static const struct FlagOrVarRecord sDummyFlagOrVarRecord = {
     .idx = 0,
     .isFlag = FALSE,
-    .value = 0x7FFF
-};
+    .value = 0x7FFF};
 
 void *QuestLogGetFlagOrVarPtr(bool8 isFlag, u16 idx)
 {
