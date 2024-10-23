@@ -117,10 +117,10 @@ extern const u8 gFameCheckerText_ClearTextbox[];
 extern const u8 gFameCheckerText_MainScreenUI[]; // "{DPAD_ANY}PICK {DPAD_UPDOWN}SELECT {A_BUTTON}OK$"
 extern const u8 gFameCheckerText_PickScreenUI[]; // "{DPAD_ANY}PICK {DPAD_UPDOWN}SELECT {B_BUTTON}CANCEL$"
 extern const u8 gFameCheckerText_FlavorTextUI[]; // "{START_BUTTON}PICK {A_BUTTON}READ {B_BUTTON}CANCEL$"
-extern const u8 gFameCheckerOakName[]; // "OAK$"
-extern const u8 gFameCheckerDaisyName[]; // "DAISY$"
-extern const u8 gFameCheckerBillName[]; // "BILL$"
-extern const u8 gFameCheckerMrFujiName[]; // "FUJI$"
+extern const u8 gFameCheckerOakName[];           // "OAK$"
+extern const u8 gFameCheckerDaisyName[];         // "DAISY$"
+extern const u8 gFameCheckerBillName[];          // "BILL$"
+extern const u8 gFameCheckerMrFujiName[];        // "FUJI$"
 
 // teachy_tv
 extern const u8 gTeachyTvString_TeachBattle[];
@@ -313,6 +313,7 @@ extern const u8 gText_ShareHp[];
 extern const u8 gText_ReturnToAHealingSpot[];
 extern const u8 gText_Summary5[];
 extern const u8 gText_Switch2[];
+extern const u8 gText_Nickname[];
 extern const u8 gText_Item[];
 extern const u8 gText_Take[];
 extern const u8 gText_Mail[];
@@ -395,7 +396,7 @@ extern const u8 gText_PkmnCantSwitchOut[];
 
 // credits
 extern const u8 gString_Dummy[];
-extern const u8 gString_PokemonFireRed_Staff[]; // FR
+extern const u8 gString_PokemonFireRed_Staff[];   // FR
 extern const u8 gString_PokemonLeafGreen_Staff[]; // LG
 extern const u8 gCreditsString_Director[];
 extern const u8 gCreditsString_Junichi_Masuda[];
@@ -1582,7 +1583,6 @@ extern const u8 gText_PokeSum_EggOrigin_NicePlace[];
 extern const u8 gText_PokeSum_EggOrigin_Spa[];
 extern const u8 gText_PokeSum_EggOrigin_Trade[];
 
-
 extern const u8 gText_BasePointsResetToZero[];
 extern const u8 gText_PkmnFriendlyBaseVar2Fell[];
 extern const u8 gText_PkmnFriendlyBaseVar2CantFall[];
@@ -1620,4 +1620,4 @@ extern const u8 gText_Speed[];
 extern const u8 gText_AM[];
 extern const u8 gText_PM[];
 
-#endif //GUARD_STRINGS_H
+#endif // GUARD_STRINGS_H
